@@ -44,8 +44,8 @@ def unpacked_data_chunk_package(packed_package):
             
         return sequence_number, checksum, tag, chunk_length, data_chunk
 
-def pack_ack(tag):
-    return struct.pack('!I', tag)
+def pack_ack(sequence_number, tag):
+    return struct.pack('!II', sequence_number, tag)
 
 while True:
     bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
@@ -54,24 +54,7 @@ while True:
     ack_list = []
     
     sequence_number, checksum, tag, chunk_length, data_chunk = unpacked_data_chunk_package(data)
-    #if tag not in ack_list:
-    #    ack_list.append(tag)
 
-    ack = pack_ack(tag)
+    ack = pack_ack(sequence_number, tag)
     UDPServerSocket.sendto(ack, address)
     
-    # Here you need to parse the message to extract the sequence number and data
-    # sequence_number, data = parse_message(message)
-    
-    # Save the data part using the sequence number as the key
-    # message_parts[sequence_number] = data
-    
-    # Send an acknowledgement for the received message part
-    # ack_message = create_ack(sequence_number)
-    # UDPServerSocket.sendto(ack_message, address)
-
-    # Once all parts are received, you can reconstruct the message
-    # if check_all_parts_received(message_parts):
-    #     full_message = reconstruct_message(message_parts)
-    #     process_full_message(full_message)
-    #     break  # or continue if you want to keep the server running
