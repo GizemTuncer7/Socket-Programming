@@ -11,7 +11,9 @@ RUN \
   apt-get install -y dnsutils && \
   apt-get install -y inetutils-ping && \
   apt-get install -y iproute2 && \
-  rm -rf /var/lib/apt/lists/*
+  apt-get install -y nano && \
+  rm -rf /var/lib/apt/lists/* 
+  
 
 ENV HOME /root
 

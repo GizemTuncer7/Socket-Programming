@@ -1,11 +1,19 @@
-# echo-server.py
-
 import socket
 
-HOST = "server"  # Set to the IP address of the server eth0 if you do not use docker compose 
-PORT = 8000  # Port to listen on (non-privileged ports are > 1023)
+HOST = "server"  # server's IP
+PORT = 8000
 
-# This implementation supports only one client
+#def receive_file(connection, file_name):
+#    with open(file_name, 'wb') as file:
+#        while True:
+#            data = connection.recv(1024)
+#            if not data:
+#                break
+#            file.write(data)
+#    print(f'Received {file_name}')
+
+# echo-server.py
+
 # You have to implement threading for handling multiple TCP connections
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
@@ -15,7 +23,5 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         print(f"Connected by {addr}")
         while True:
             data = conn.recv(1024)
-            print(data)
             if not data:
                 break
-            conn.sendall(data)
