@@ -1,47 +1,12 @@
 import socket
 from collections import deque
 import Package
-import os
 import datetime
-import struct
 import Package
 
-# MACROS
-BUFFER_SIZE = 1350
-WINDOW_SIZE = 150
+from helpers import *
 
-
-def interleave_parts(large_file_paths, small_file_paths):
-    interleaved = []
-    larger_list, smaller_list = (large_file_paths, small_file_paths) if len(large_file_paths) > len(
-        small_file_paths) else (small_file_paths, large_file_paths)
-
-    # Interleave parts from the larger and smaller lists
-    for i in range(len(larger_list)):
-        interleaved.append(larger_list[i])
-        if i < len(smaller_list):
-            interleaved.append(smaller_list[i])
-
-    return interleaved
-
-
-def get_interleaved_path_list():
-    large_file_paths = []
-    small_file_paths = []
-    for i in range(10):
-        large_file_paths.append(os.path.join('/root', 'objects', f"large-{i}.obj"))
-        small_file_paths.append(os.path.join('/root', 'objects', f"small-{i}.obj"))
-
-    interleaved_path_list = interleave_parts(large_file_paths, small_file_paths)
-    return interleaved_path_list
-
-
-def unpack_ack(packed_ack):
-    return struct.unpack('!II', packed_ack)
-
-
-class UDP_With_Selective_Repeat:
-    window = None
+class UDP_Client_with_Selective_Repeat:
     data_chunk_list = None
     last_appended_index = None
     is_finished = None
@@ -151,8 +116,3 @@ class UDP_With_Selective_Repeat:
                 break
 
         self.UDPClientSocket.close()
-
-
-udp_sr = UDP_With_Selective_Repeat()
-
-udp_sr.run()
