@@ -2,119 +2,149 @@ import socket
 from collections import deque
 import Package
 import os
-import threading
 import datetime
-import pickle
 import struct
 import Package
 
 # MACROS
 BUFFER_SIZE = 1350
 WINDOW_SIZE = 150
-tag = 0
-data_chunk_list  = []
-last_appended_index = 0
-
-serverAddressPort = ("server", 8000)
-UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
-window_lock = threading.Lock()
 
 
-def interleave_parts(large_file_paths, small_file_paths):
-    interleaved = []
-    larger_list, smaller_list = (large_file_paths, small_file_paths) if len(large_file_paths) > len(small_file_paths) else (small_file_paths, large_file_paths)
+class UDP_with_Selective_Repeat:
+    window = None
+    tag = None
+    data_chunk_list  = None
+    last_appended_index = None
+    is_finished = None
+    serverAddressPort = None
+    UDPClientSocket = None
 
-    # Interleave parts from the larger and smaller lists
-    for i in range(len(larger_list)):
-        interleaved.append(larger_list[i])
-        if i < len(smaller_list):
-            interleaved.append(smaller_list[i])
+    def __init__(self):
+        self.window = deque(maxlen=WINDOW_SIZE)
+        self.tag = 0
+        self.data_chunk_list  = []
+        self.last_appended_index = 0
+        self.is_finished = False
+        self.serverAddressPort = ("server", 8000)
+        self.UDPClientSocket = None
 
-    return interleaved
+    def interleave_parts(self, large_file_paths, small_file_paths):
+        interleaved = []
+        larger_list, smaller_list = (large_file_paths, small_file_paths) if len(large_file_paths) > len(small_file_paths) else (small_file_paths, large_file_paths)
 
-def split_data(interleaved_path_list):
-    global tag
-    sequence_number = 0
-    for interleaved_path in interleaved_path_list:
-        with open(interleaved_path, 'rb') as file:
-            while True:
-                data_chunk = file.read(BUFFER_SIZE)
-                if not data_chunk:
-                    break
-                packet = Package.Package(sequence_number=sequence_number, data_chunk=data_chunk, tag=tag)
-                tag += 1
-                data_chunk_list.append(packet)
-        sequence_number += 1
+        # Interleave parts from the larger and smaller lists
+        for i in range(len(larger_list)):
+            interleaved.append(larger_list[i])
+            if i < len(smaller_list):
+                interleaved.append(smaller_list[i])
 
-def get_interleaved_path_list():
-    large_file_paths = []
-    small_file_paths = []
-    for i in range(10):
-        large_file_paths.append(os.path.join('/root', 'objects', f"large-{i}.obj"))
-        small_file_paths.append(os.path.join('/root', 'objects', f"small-{i}.obj"))
+        return interleaved
 
-    interleaved_path_list = interleave_parts(large_file_paths, small_file_paths)
-    return interleaved_path_list
+    def split_data(self, interleaved_path_list):
+        sequence_number = 0
+        for interleaved_path in interleaved_path_list:
+            with open(interleaved_path, 'rb') as file:
+                while True:
+                    data_chunk = file.read(BUFFER_SIZE)
+                    if not data_chunk:
+                        break
+                    packet = Package.Package(sequence_number=sequence_number, data_chunk=data_chunk, tag=self.tag)
+                    self.tag += 1
+                    self.data_chunk_list.append(packet)
+            sequence_number += 1
 
-def fill_the_window():
-    global last_appended_index
-    while(len(window) < WINDOW_SIZE):
-        try:
-            packet = data_chunk_list[last_appended_index]
-            window.append(packet)
-            last_appended_index += 1
-        except StopIteration:
-            break
+    def get_interleaved_path_list(self):
+        large_file_paths = []
+        small_file_paths = []
+        for i in range(10):
+            large_file_paths.append(os.path.join('/root', 'objects', f"large-{i}.obj"))
+            small_file_paths.append(os.path.join('/root', 'objects', f"small-{i}.obj"))
 
-def unpack_ack(packed_ack):
-    return struct.unpack('!I', packed_ack)[0]
+        interleaved_path_list = self.interleave_parts(large_file_paths, small_file_paths)
+        return interleaved_path_list
 
-def send_data():
-    global window 
-    for packet in window:
-        if packet.get_state() == "wait":
-            packet.change_state_as_sent()
-            print(f"Sending packet with sequence number {packet.sequence_number} and tag {packet.tag}")
-            packed_package = packet.packed_data_chunk_package()
-            UDPClientSocket.sendto(packed_package, serverAddressPort)
-        elif packet.get_state() == "sent":
-            if packet.is_timeout():
-                print(f"Timeout, sequence number = {packet.sequence_number} {packet.tag}")
-                packet.sent_time = datetime.datetime.utcnow().timestamp()
-                UDPClientSocket.sendto(packet.packed_data_chunk_package(), serverAddressPort)
+    def fill_the_window(self):
+        while(len(self.window) < WINDOW_SIZE):
+            try:
+                packet = self.data_chunk_list[self.last_appended_index]
+                self.window.append(packet)
+                self.last_appended_index += 1
+            except StopIteration:
+                break
 
-        
+    def unpack_ack(self, packed_ack):
+        return struct.unpack('!I', packed_ack)[0]
 
-def receive_ack():
-    global last_appended_index
-    global window
-    # Şimdilik ack kısmı bu şekilde dursun sonra package içerisine koyucaz ack kısmını
-    ack, address = UDPClientSocket.recvfrom(BUFFER_SIZE)
-    ack = unpack_ack(ack)
+    def send_data(self):
+        print("Window length:", len(self.window))
+        if (len(self.window) == 0):
+            print("VALLA BITTI")
+            self.is_finished = True
+            print("VALLA BITTI: ", self.is_finished)
 
-    for w_packet in window:
-        if w_packet.tag == ack:
-            w_packet.change_state_as_Acked()
-            break
-    
-    if window[0].get_state() == "acked":
-        window.popleft()
-        if data_chunk_list[last_appended_index]:
-            next_data_chunk = data_chunk_list[last_appended_index]
-            last_appended_index += 1
+        for packet in self.window:
+            if packet.get_state() == "wait":
+                packet.change_state_as_sent()
+                print(f"Sending packet with sequence number {packet.sequence_number} and tag {packet.tag}")
+                packed_package = packet.packed_data_chunk_package()
+                self.UDPClientSocket.sendto(packed_package, self.serverAddressPort)
+            elif packet.get_state() == "sent":
+                if packet.is_timeout():
+                    # print(f"Timeout, sequence number = {packet.sequence_number} {packet.tag}")
+                    packet.sent_time = datetime.datetime.utcnow().timestamp()
+                    self.UDPClientSocket.sendto(packet.packed_data_chunk_package(), self.serverAddressPort)
+
+    def receive_ack(self):
+        ack, address = self.UDPClientSocket.recvfrom(BUFFER_SIZE)
+        ack = self.unpack_ack(ack)
+        print("Received Ack:", ack)
+
+        print("is_finished:", self.is_finished)
+        if self.is_finished:
+            return
+
+        for w_packet in self.window:
+            if w_packet.tag == ack:
+                w_packet.change_state_as_Acked()
+                break
+
+        if self.window[0].get_state() == "acked":
+            self.window.popleft()
+            try:
+                if self.data_chunk_list[self.last_appended_index]:
+                    next_data_chunk = self.data_chunk_list[self.last_appended_index]
+                    self.window.append(next_data_chunk)
+                    self.last_appended_index += 1
+            except IndexError:
+                return
+
+    def run(self):
+        self.UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+
+        interleaved_path_list = self.get_interleaved_path_list()
+
+        self.split_data(interleaved_path_list)
+
+
+        self.fill_the_window()
+
+        while True:
+            self.send_data()
+            self.receive_ack()
+            if self.is_finished:
+                print("\nFinished sending all data chunks.")
+                print("Remaining window length:", len(self.window))
+                print("Last appended index:", self.last_appended_index)
+                break
+
+        self.UDPClientSocket.close()
+
+
           
+udp_sr = UDP_with_Selective_Repeat()
 
-interleaved_path_list = get_interleaved_path_list()
-
-split_data(interleaved_path_list)
-
-window = deque(maxlen=WINDOW_SIZE)
-fill_the_window()
-
-while True:
-    send_data()
-    receive_ack()
+udp_sr.run()
     
 
-UDPClientSocket.close()
+
