@@ -48,7 +48,7 @@ class Package:
         self.current_state = "sent"
 
     def change_state_as_received(self, data):
-        self.data_chunk = data_chunk
+        self.data_chunk = data
         self.received_time = datetime.datetime.utcnow().timestamp()
         self.current_state = "received"
     

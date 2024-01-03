@@ -37,12 +37,11 @@ def get_interleaved_path_list():
 
 
 def unpack_ack(packed_ack):
-    return struct.unpack('!I', packed_ack)[0]
+    return struct.unpack('!II', packed_ack)
 
 
 class UDP_With_Selective_Repeat:
     window = None
-    tag = None
     data_chunk_list = None
     last_appended_index = None
     is_finished = None
@@ -51,7 +50,6 @@ class UDP_With_Selective_Repeat:
 
     def __init__(self):
         self.window = deque(maxlen=WINDOW_SIZE)
-        self.tag = 0
         self.data_chunk_list = []
         self.last_appended_index = 0
         self.is_finished = False
@@ -62,14 +60,15 @@ class UDP_With_Selective_Repeat:
         sequence_number = 0
         for interleaved_path in interleaved_path_list:
             with open(interleaved_path, 'rb') as file:
+                tag = 0
                 while True:
                     data_chunk = file.read(BUFFER_SIZE)
                     if not data_chunk:
                         break
-                    packet = Package.Package(sequence_number=sequence_number, data_chunk=data_chunk, tag=self.tag)
-                    self.tag += 1
+                    packet = Package.Package(sequence_number=sequence_number, data_chunk=data_chunk, tag=tag)
+                    tag += 1
                     self.data_chunk_list.append(packet)
-            sequence_number += 1
+                sequence_number += 1
 
     def fill_the_window(self):
         while len(self.window) < WINDOW_SIZE:
@@ -81,13 +80,7 @@ class UDP_With_Selective_Repeat:
                 break
 
     def send_data(self):
-        print("Window length:", len(self.window))
-        if len(self.window) == 0:
-            print("VALLA BITTI")
-            self.is_finished = True
-            print("VALLA BITTI: ", self.is_finished)
-            return True
-
+        print("Send Data Window Length:", len(self.window))
         for packet in self.window:
             if packet.get_state() == "wait":
                 packet.change_state_as_sent()
@@ -100,19 +93,25 @@ class UDP_With_Selective_Repeat:
                     packet.sent_time = datetime.datetime.utcnow().timestamp()
                     self.UDPClientSocket.sendto(packet.packed_data_chunk_package(), self.serverAddressPort)
 
-        return False
+
 
     def receive_ack(self):
         ack, address = self.UDPClientSocket.recvfrom(BUFFER_SIZE)
-        ack = unpack_ack(ack)
-        print("Received Ack:", ack)
 
-        print("is_finished:", self.is_finished)
-        if self.is_finished:
+        if (ack == None):
+            raise Exception("Ack is None")
+
+        sequence_number, tag = unpack_ack(ack)
+        print(f"Received Ack: {sequence_number} - {tag}")
+
+        print("Receive Ack Window Length:", len(self.window))
+        if len(self.window) == 0:
+            print("Window is empty")
+            self.is_finished = True
             return
 
         for w_packet in self.window:
-            if w_packet.tag == ack:
+            if w_packet.sequence_number == sequence_number and w_packet.tag == tag:
                 w_packet.change_state_as_Acked()
                 break
 
@@ -124,7 +123,12 @@ class UDP_With_Selective_Repeat:
                     self.window.append(next_data_chunk)
                     self.last_appended_index += 1
             except IndexError:
-                return
+                pass
+
+        if len(self.window) == 0:
+            print("Window is empty")
+            self.is_finished = True
+
 
     def run(self):
         self.UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -136,13 +140,15 @@ class UDP_With_Selective_Repeat:
         self.fill_the_window()
 
         while True:
-            if self.send_data():
+            self.send_data()
+            self.receive_ack()
+
+            if self.is_finished:
                 print("\nFinished sending all data chunks.")
                 print("Remaining window length:", len(self.window))
                 print("Last appended index:", self.last_appended_index)
                 print("is finished:", self.is_finished)
                 break
-            self.receive_ack()
 
         self.UDPClientSocket.close()
 
