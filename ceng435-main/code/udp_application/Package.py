@@ -3,6 +3,7 @@ import pickle
 import struct
 import hashlib
 
+TIMEOUT_INTERVAL = 20.0
 
 PACKAGE_SIZE = 1500
 
@@ -20,6 +21,7 @@ DATA_CHUNK_SIZE = PACKAGE_SIZE - HEADER_SIZE
 
 
 class Package:
+    packet_number = 0
     sequence_number = 0
     tag = 0
     data_chunk = None
@@ -30,7 +32,8 @@ class Package:
     sent_time = None
     received_time = None
 
-    def __init__(self, sequence_number, tag, data_chunk=None):
+    def __init__(self, packet_number, sequence_number, tag, data_chunk=None):
+        self.packet_number = packet_number
         self.sequence_number = sequence_number % 100000
         self.data_chunk = data_chunk
         self.tag = tag
@@ -61,12 +64,12 @@ class Package:
     def packed_data_chunk_package(self):
         data_chunk_length = len(self.data_chunk)
 
-        checksum = self.get_checksum(bytes(str(self.sequence_number), 'utf8') + \
+        checksum = self.get_checksum(bytes(str(self.packet_number), 'utf8') + \
             bytes(str(data_chunk_length), 'utf8') + self.data_chunk)
         
         align_size = DATA_CHUNK_SIZE - data_chunk_length
 
-        return struct.pack(f'!I16sII{data_chunk_length}s{align_size}s', self.sequence_number, checksum, self.tag, data_chunk_length, self.data_chunk, b' ' * align_size)
+        return struct.pack(f'!II16sII{data_chunk_length}s{align_size}s', self.packet_number, self.sequence_number, checksum, self.tag, data_chunk_length, self.data_chunk, b' ' * align_size)
 
     
 
@@ -74,7 +77,7 @@ class Package:
         return datetime.datetime.utcnow().timestamp() - self.sent_time >= 20.0
 
     def __str__(self):
-        return f'{self.sequence_number} - {self.current_state}'
+        return f'{self.packet_number}: {self.sequence_number} - {self.current_state}'
     
 
 
