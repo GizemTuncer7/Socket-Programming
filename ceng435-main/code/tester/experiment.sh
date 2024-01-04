@@ -3,6 +3,15 @@
 # Define the interface to manipulate
 IFACE=eth0
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+
 # Experiment configurations
 EXPERIMENTS=30
 LOSS_RATES=("0%" "5%" "10%" "15%")
@@ -32,12 +41,13 @@ run_experiments() {
         # Run experiments for both UDP and TCP
         for i in $(seq 1 $EXPERIMENTS); do
             echo "Running UDP experiment $i with $condition_type $value"
-            python3 ../udp_application/udp_client.py
+            ${RED}python3 ../udp_application/udp_client.py${NC}
+            
             # Run corresponding server in the background or on another terminal
             # python udp_server.py
 
             echo "Running TCP experiment $i with $condition_type $value"
-            python3 ../tcp_application/tcp_client.py
+            ${RED}python3 ../tcp_application/tcp_client.py${NC}
             # Run corresponding server in the background or on another terminal
             # python tcp_server.py
         done
