@@ -2,7 +2,6 @@ import socket
 from collections import deque
 import Package
 import datetime
-import Package
 import time
 
 from helpers import *
@@ -21,7 +20,7 @@ class UDP_Client_with_Selective_Repeat:
         self.send_base = 0
         self.next_sequence_number = 0
         self.packets_length = 0
-        self.packets = []
+        self.packets = deque()
         
         self.last_appended_index = 0
         self.is_finished = False
@@ -57,7 +56,6 @@ class UDP_Client_with_Selective_Repeat:
             self.UDPClientSocket.sendto(self.packets[self.send_base].packed_data_chunk_package(), self.serverAddressPort)
 
 
-
     def receive_ack(self):
         ack, address = self.UDPClientSocket.recvfrom(BUFFER_SIZE)
 
@@ -76,9 +74,6 @@ class UDP_Client_with_Selective_Repeat:
             if (self.send_base == self.packets_length):
                 self.is_finished = True
          
-
-
-
 
     def run(self):
         now = time.time()
