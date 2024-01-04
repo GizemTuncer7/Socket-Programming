@@ -46,7 +46,7 @@ class UDP_Client_with_Selective_Repeat:
 
     def send_data(self):
         # print("Send Data Window Length:", len(self.window))
-        if  self.next_sequence_number < self.packets_length and (self.next_sequence_number - self.send_base) < WINDOW_SIZE:
+        if self.next_sequence_number < self.packets_length and (self.next_sequence_number - self.send_base) < WINDOW_SIZE:
             # print("next_sequence_number:", self.next_sequence_number)
             self.packets[self.next_sequence_number].change_state_as_sent()
             self.UDPClientSocket.sendto(self.packets[self.next_sequence_number].packed_data_chunk_package(), self.serverAddressPort)
