@@ -8,15 +8,21 @@ import time
 from helpers import *
 
 class UDP_Client_with_Selective_Repeat:
-    data_chunk_list = None
+    packets = None
     last_appended_index = None
     is_finished = None
     serverAddressPort = None
     UDPClientSocket = None
+    packets_length = None
+    send_base = 0
+    next_sequence_number = 0
 
     def __init__(self):
-        self.window = deque(maxlen=WINDOW_SIZE)
-        self.data_chunk_list = []
+        self.send_base = 0
+        self.next_sequence_number = 0
+        self.packets_length = 0
+        self.packets = []
+        
         self.last_appended_index = 0
         self.is_finished = False
         self.serverAddressPort = ("server", 8000)
@@ -24,6 +30,7 @@ class UDP_Client_with_Selective_Repeat:
 
     def split_data(self, interleaved_path_list):
         sequence_number = 0
+
         for interleaved_path in interleaved_path_list:
             with open(interleaved_path, 'rb') as file:
                 tag = 0
@@ -31,33 +38,23 @@ class UDP_Client_with_Selective_Repeat:
                     data_chunk = file.read(BUFFER_SIZE)
                     if not data_chunk:
                         break
-                    packet = Package.Package(sequence_number=sequence_number, data_chunk=data_chunk, tag=tag)
+                    packet = Package.Package(packet_number=self.packets_length, sequence_number=sequence_number, data_chunk=data_chunk, tag=tag)
                     tag += 1
-                    self.data_chunk_list.append(packet)
+                    self.packets_length += 1
+                    self.packets.append(packet)
                 sequence_number += 1
 
-    def fill_the_window(self):
-        while len(self.window) < WINDOW_SIZE:
-            try:
-                packet = self.data_chunk_list[self.last_appended_index]
-                self.window.append(packet)
-                self.last_appended_index += 1
-            except StopIteration:
-                break
 
     def send_data(self):
         # print("Send Data Window Length:", len(self.window))
-        for packet in self.window:
-            if packet.get_state() == "wait":
-                packet.change_state_as_sent()
-                # print(f"Sending packet with sequence number {packet.sequence_number} and tag {packet.tag}")
-                packed_package = packet.packed_data_chunk_package()
-                self.UDPClientSocket.sendto(packed_package, self.serverAddressPort)
-            elif packet.get_state() == "sent":
-                if packet.is_timeout():
-                    # print(f"Timeout, sequence number = {packet.sequence_number} {packet.tag}")
-                    packet.sent_time = datetime.datetime.utcnow().timestamp()
-                    self.UDPClientSocket.sendto(packet.packed_data_chunk_package(), self.serverAddressPort)
+        if (self.next_sequence_number - self.send_base) < WINDOW_SIZE:
+            self.packets[self.next_sequence_number].change_state_as_sent()
+            self.UDPClientSocket.sendto(self.packets[self.next_sequence_number].packed_data_chunk_package(), self.serverAddressPort)
+            self.next_sequence_number += 1
+
+        if self.send_base < self.packets_length and self.packets[self.send_base].is_timeout():
+            self.packets[self.send_base].change_state_as_sent()
+            self.UDPClientSocket.sendto(self.packets[self.send_base].packed_data_chunk_package(), self.serverAddressPort)
 
 
 
@@ -67,33 +64,20 @@ class UDP_Client_with_Selective_Repeat:
         if (ack == None):
             raise Exception("Ack is None")
 
-        sequence_number, tag = unpack_ack(ack)
+        packet_number, sequence_number, tag = unpack_ack(ack)
         # print(f"Received Ack: {sequence_number} - {tag}")
 
         # print("Receive Ack Window Length:", len(self.window))
-        if len(self.window) == 0:
-            # print("Window is empty")
-            self.is_finished = True
-            return
 
-        for w_packet in self.window:
-            if w_packet.sequence_number == sequence_number and w_packet.tag == tag:
-                w_packet.change_state_as_Acked()
-                break
+        self.packets[packet_number] = self.packets[packet_number].change_state_as_Acked()
 
-        if self.window[0].get_state() == "acked":
-            self.window.popleft()
-            try:
-                if self.data_chunk_list[self.last_appended_index]:
-                    next_data_chunk = self.data_chunk_list[self.last_appended_index]
-                    self.window.append(next_data_chunk)
-                    self.last_appended_index += 1
-            except IndexError:
-                pass
+        if packet_number == self.send_base:
+            self.send_base += 1
+            if (self.send_base == self.packets_length):
+                self.is_finished = True
+         
 
-        if len(self.window) == 0:
-            # print("Window is empty")
-            self.is_finished = True
+
 
 
     def run(self):
@@ -104,8 +88,6 @@ class UDP_Client_with_Selective_Repeat:
         interleaved_path_list = get_interleaved_path_list()
 
         self.split_data(interleaved_path_list)
-
-        self.fill_the_window()
 
         while True:
             self.send_data()

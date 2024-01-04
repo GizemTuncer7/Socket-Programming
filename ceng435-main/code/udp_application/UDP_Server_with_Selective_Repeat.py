@@ -22,8 +22,8 @@ class UDP_Server_with_Selective_Repeat:
         self.bufferSize = 1500
         self.address = None
 
-    def send_ack(self, sequence_number, tag):
-        ack = pack_ack(sequence_number, tag)
+    def send_ack(self, packet_number, sequence_number, tag):
+        ack = pack_ack(packet_number, sequence_number, tag)
         self.UDPServerSocket.sendto(ack, self.address)
 
     def listen_socket(self):
@@ -31,12 +31,11 @@ class UDP_Server_with_Selective_Repeat:
         received_data = bytesAddressPair[0]
         self.address = bytesAddressPair[1]
 
-        sequence_number, checksum, tag, chunk_length, data_chunk = unpacked_data_chunk_package(received_data)
+        packet_number, sequence_number, checksum, tag, chunk_length, data_chunk = unpacked_data_chunk_package(received_data)
 
         self.receive_data(sequence_number, tag, data_chunk)
 
-        self.send_ack(sequence_number, tag)
-
+        self.send_ack(packet_number, sequence_number, tag)
 
 
     def receive_data(self, sequence_number, tag, data_chunk):
@@ -45,7 +44,6 @@ class UDP_Server_with_Selective_Repeat:
                 self.data_chunk_dict[sequence_number][tag] = data_chunk
             else:
                 print("DUPLICATE")
-                self.send_ack(sequence_number, tag)
         else:
             self.data_chunk_dict[sequence_number] = {tag: data_chunk}
 
