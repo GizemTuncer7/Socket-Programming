@@ -1,4 +1,5 @@
 import socket
+import time
 import pickle
 import struct
 import hashlib
@@ -25,12 +26,26 @@ class UDP_Server_with_Selective_Repeat:
         ack = pack_ack(sequence_number, tag)
         self.UDPServerSocket.sendto(ack, self.address)
 
+    def listen_socket(self):
+        bytesAddressPair = self.UDPServerSocket.recvfrom(self.bufferSize)
+        received_data = bytesAddressPair[0]
+        self.address = bytesAddressPair[1]
+
+        sequence_number, checksum, tag, chunk_length, data_chunk = unpacked_data_chunk_package(received_data)
+
+        self.receive_data(sequence_number, tag, data_chunk)
+
+        self.send_ack(sequence_number, tag)
+
+
+
     def receive_data(self, sequence_number, tag, data_chunk):
         if sequence_number in self.data_chunk_dict.keys():
             if tag not in self.data_chunk_dict[sequence_number].keys():
                 self.data_chunk_dict[sequence_number][tag] = data_chunk
             else:
-                print('duplicate')
+                print("DUPLICATE")
+                self.send_ack(sequence_number, tag)
         else:
             self.data_chunk_dict[sequence_number] = {tag: data_chunk}
 
@@ -40,27 +55,12 @@ class UDP_Server_with_Selective_Repeat:
         print("UDP server up and listening")
 
         while True:
-            bytesAddressPair = self.UDPServerSocket.recvfrom(self.bufferSize)
-            data = bytesAddressPair[0]
-            self.address = bytesAddressPair[1]
+            self.listen_socket()
 
-            sequence_number, checksum, tag, chunk_length, data_chunk = unpacked_data_chunk_package(data)
-
-            ack = pack_ack(sequence_number, tag)
-            self.UDPServerSocket.sendto(ack, self.address)
-
-            self.receive_data(sequence_number, tag, data_chunk)
-
-            if sequence_number == 19 and tag == 740:
-                break
-
-        file_list = []
-
-        for (seq_num, tag_chunk_dict) in self.data_chunk_dict.items():
-            for (tag, chunk) in tag_chunk_dict.items():
-                if tag is None:
-                    print("ZOOOOOOOOOOOOORT")
-                else:
-                    # print(f"\t Sequence Number: {seq_num} - Tag: {tag}")
-                    pass
-
+            try:
+                if (self.data_chunk_dict.keys().__len__() == 20) and (self.data_chunk_dict[19].keys().__len__() == 741):
+                    print("DONE")
+                    break
+            except KeyError as e:
+                print(e)
+        

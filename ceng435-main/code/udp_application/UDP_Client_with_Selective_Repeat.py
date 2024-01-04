@@ -3,6 +3,7 @@ from collections import deque
 import Package
 import datetime
 import Package
+import time
 
 from helpers import *
 
@@ -45,11 +46,11 @@ class UDP_Client_with_Selective_Repeat:
                 break
 
     def send_data(self):
-        print("Send Data Window Length:", len(self.window))
+        # print("Send Data Window Length:", len(self.window))
         for packet in self.window:
             if packet.get_state() == "wait":
                 packet.change_state_as_sent()
-                print(f"Sending packet with sequence number {packet.sequence_number} and tag {packet.tag}")
+                # print(f"Sending packet with sequence number {packet.sequence_number} and tag {packet.tag}")
                 packed_package = packet.packed_data_chunk_package()
                 self.UDPClientSocket.sendto(packed_package, self.serverAddressPort)
             elif packet.get_state() == "sent":
@@ -67,11 +68,11 @@ class UDP_Client_with_Selective_Repeat:
             raise Exception("Ack is None")
 
         sequence_number, tag = unpack_ack(ack)
-        print(f"Received Ack: {sequence_number} - {tag}")
+        # print(f"Received Ack: {sequence_number} - {tag}")
 
-        print("Receive Ack Window Length:", len(self.window))
+        # print("Receive Ack Window Length:", len(self.window))
         if len(self.window) == 0:
-            print("Window is empty")
+            # print("Window is empty")
             self.is_finished = True
             return
 
@@ -91,11 +92,13 @@ class UDP_Client_with_Selective_Repeat:
                 pass
 
         if len(self.window) == 0:
-            print("Window is empty")
+            # print("Window is empty")
             self.is_finished = True
 
 
     def run(self):
+        now = time.time()
+
         self.UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
         interleaved_path_list = get_interleaved_path_list()
@@ -109,10 +112,12 @@ class UDP_Client_with_Selective_Repeat:
             self.receive_ack()
 
             if self.is_finished:
-                print("\nFinished sending all data chunks.")
-                print("Remaining window length:", len(self.window))
-                print("Last appended index:", self.last_appended_index)
-                print("is finished:", self.is_finished)
                 break
 
         self.UDPClientSocket.close()
+
+        end = time.time()
+
+        # elapsed time in seconds
+        elapsed = end - now
+        print(f"Elapsed time: {elapsed} seconds on UDP {socket.gethostname()}")
