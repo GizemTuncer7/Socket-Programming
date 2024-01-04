@@ -1,5 +1,6 @@
 import socket
 import os
+import time
 
 HOST = socket.gethostbyname("server")  # or directly set the server's IP
 PORT = 8000
@@ -16,12 +17,20 @@ def send_file(client_socket, file_path):
     print(f'Sent {file_path}')
 
 
-client_socket = socket.socket()
-client_socket.connect((HOST, PORT))
+if __name__ == "__main__":
+    now = time.time()
 
-# Send each pair of small and large objects
-for i in range(10):
-    send_file(client_socket, f"small-{i}.obj")
-    send_file(client_socket, f"large-{i}.obj")
+    client_socket = socket.socket()
+    client_socket.connect((HOST, PORT))
 
-client_socket.close()
+    # Send each pair of small and large objects
+    for i in range(10):
+        send_file(client_socket, f"small-{i}.obj")
+        send_file(client_socket, f"large-{i}.obj")
+
+    client_socket.close()
+
+    end = time.time()
+    elapsed = end - now
+
+    print(f"Elapsed time: {elapsed} seconds on TCP - {socket.gethostname()}")
