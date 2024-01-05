@@ -14,7 +14,7 @@ EXPERIMENTS=30
 LOSS_RATES=("0%" "5%" "10%" "15%")
 DUPLICATION_RATES=("0%" "5%" "10%")
 CORRUPTION_RATES=("0%" "5%" "10%")
-DELAY_TYPES=("100ms uniform distribution" "100ms normal distribution")
+DELAY_TYPES=("100ms 50ms distribution" "100ms 50ms distribution normal")
 
 RED='\033[0;31m'
 NC='\033[0m' # No Color
@@ -70,8 +70,8 @@ run_experiments() {
             # python tcp_server.py
             echo -e "\n"
 
-            echo -e "\n" >> $udp_file
-            echo -e "\n" >> $tcp_file
+            echo -e "\n" >> "$udp_file"
+            echo -e "\n" >> "$tcp_file"
         done
 
         # Clear network conditions after the batch is done
@@ -107,7 +107,7 @@ for i in $(seq 1 $EXPERIMENTS); do
     echo -e "\n" >> $tcp_file
 done
 
-Now running experiments with network impairments
+# Now running experiments with network impairments
 
 # Run experiments for packet loss
 echo "Running experiments for packet loss"

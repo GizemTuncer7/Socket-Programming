@@ -20,7 +20,7 @@ EXPERIMENTS=30
 LOSS_RATES=("0%" "5%" "10%" "15%")
 DUPLICATION_RATES=("0%" "5%" "10%")
 CORRUPTION_RATES=("0%" "5%" "10%")
-DELAY_TYPES=("100ms uniform distribution" "100ms normal distribution")
+DELAY_TYPES=("100ms 50ms distribution" "100ms 50ms distribution normal")
 
 RED='\033[0;31m'
 NC='\033[0m' # No Color
@@ -63,7 +63,6 @@ run_experiments() {
         clear_conditions
 
         # Wait a bit before the next experiment set
-        sleep 2
     done
 
     echo -e "\n\n"
@@ -72,7 +71,7 @@ run_experiments() {
 # Ensure any existing network conditions are cleared
 clear_conditions
 
-# # Benchmarking phase without any network impairments
+# Benchmarking phase without any network impairments
 echo "Running benchmark experiments (no network impairments)"
 for i in $(seq 1 $EXPERIMENTS); do
     echo -e "${RED}Running TCP benchmark experiment $i${NC}"
@@ -82,7 +81,7 @@ for i in $(seq 1 $EXPERIMENTS); do
     echo -e ""
 done
 
-Now running experiments with network impairments
+# Now running experiments with network impairments
 
 # Run experiments for packet loss
 echo "Running experiments for packet loss"

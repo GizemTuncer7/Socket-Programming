@@ -193,4 +193,5 @@ def plot_graphs(tcp_list, udp_list, experiment_name):
     confidence_plot(mean_tcp, mean_udp, margin_of_error_tcp, margin_of_error_udp, experiment_name)
 
 # Below is the code to run the plot
-# draw_plot(tcp_path_list, udp_path_list)
+if __name__ == "__main__":
+    draw_plot(tcp_path_list, udp_path_list)

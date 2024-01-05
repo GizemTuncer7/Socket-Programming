@@ -64,7 +64,7 @@ def get_interleaved_path_list() -> list:
     return interleaved_path_list
 
 
-def unpack_ack(packed_ack) -> tuple(int, int, int):
+def unpack_ack(packed_ack):
     """
     Unpack a packed acknowledgment (ack) into its constituent parts.
 
