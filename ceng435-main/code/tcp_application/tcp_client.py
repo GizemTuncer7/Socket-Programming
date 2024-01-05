@@ -6,7 +6,6 @@ HOST = socket.gethostbyname("server")  # or directly set the server's IP
 PORT = 8000
 
 def send_file(client_socket, file_path):
-    # 'rb' means that the data read from the file is of type 'bytes'. THis is binary mode
     file_path = os.path.join('/root', 'objects', file_path) 
     with open(file_path, 'rb') as file:
         while True:

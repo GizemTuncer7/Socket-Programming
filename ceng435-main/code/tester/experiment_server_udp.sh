@@ -38,18 +38,11 @@ run_experiments() {
 
         # Run experiments for both UDP and TCP
         for i in $(seq 1 $EXPERIMENTS); do
-            echo -e "${MAGENTA}Running UDP experiment $i with $condition_type $value${NC}"
-            python3 ../udp_application/udp_client.py
+            echo -e "${RED}Running UDP experiment $i with $condition_type $value on server${NC}"
+            python3 ../udp_application/udp_server.py
             # Run corresponding server in the background or on another terminal
             # python udp_server.py
-            echo -e ""
 
-            sleep 2
-
-            echo -e "${MAGENTA}Running TCP experiment $i with $condition_type $value${NC}"
-            python3 ../tcp_application/tcp_client.py
-            # Run corresponding server in the background or on another terminal
-            # python tcp_server.py
             echo -e "\n"
         done
 
@@ -82,17 +75,17 @@ clear_conditions
 
 # Now running experiments with network impairments
 
-# # Run experiments for packet loss
-# echo "Running experiments for packet loss"
-# run_experiments "loss" "${LOSS_RATES[@]}"
+# Run experiments for packet loss
+echo "Running experiments for packet loss"
+run_experiments "loss" "${LOSS_RATES[@]}"
 
-# # Run experiments for packet duplication
-# echo "Running experiments for packet duplication"
-# run_experiments "duplicate" "${DUPLICATION_RATES[@]}"
+# Run experiments for packet duplication
+echo "Running experiments for packet duplication"
+run_experiments "duplicate" "${DUPLICATION_RATES[@]}"
 
-# # Run experiments for packet corruption
-# echo "Running experiments for packet corruption"
-# run_experiments "corrupt" "${CORRUPTION_RATES[@]}"
+# Run experiments for packet corruption
+echo "Running experiments for packet corruption"
+run_experiments "corrupt" "${CORRUPTION_RATES[@]}"
 
 # Run experiments for packet delay
 echo "Running experiments for packet delay"
