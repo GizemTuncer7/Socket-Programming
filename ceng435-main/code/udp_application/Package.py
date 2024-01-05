@@ -2,8 +2,7 @@ import datetime
 import pickle
 import struct
 import hashlib
-
-TIMEOUT_INTERVAL = 20.0
+from helpers import TIMEOUT_INTERVAL
 
 PACKAGE_SIZE = 1500
 
@@ -49,14 +48,17 @@ class Package:
     def change_state_as_sent(self):
         self.sent_time =datetime.datetime.utcnow().timestamp()
         self.current_state = "sent"
+        return self
 
     def change_state_as_received(self, data):
         self.data_chunk = data
         self.received_time = datetime.datetime.utcnow().timestamp()
         self.current_state = "received"
+        return self
     
     def change_state_as_Acked(self):
         self.current_state = "acked"
+        return self
 
     def get_checksum(self, data):
         return hashlib.md5(data).digest()
@@ -74,7 +76,7 @@ class Package:
     
 
     def is_timeout(self):
-        return datetime.datetime.utcnow().timestamp() - self.sent_time >= 20.0
+        return datetime.datetime.utcnow().timestamp() - self.sent_time >= TIMEOUT_INTERVAL
 
     def __str__(self):
         return f'{self.packet_number}: {self.sequence_number} - {self.current_state}'

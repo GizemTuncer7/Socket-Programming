@@ -42,22 +42,20 @@ class UDP_Server_with_Selective_Repeat:
         if sequence_number in self.data_chunk_dict.keys():
             if tag not in self.data_chunk_dict[sequence_number].keys():
                 self.data_chunk_dict[sequence_number][tag] = data_chunk
-            else:
-                print("DUPLICATE")
         else:
             self.data_chunk_dict[sequence_number] = {tag: data_chunk}
 
     def run(self):
         self.UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         self.UDPServerSocket.bind((self.localIP, self.localPort))
-        print("UDP server up and listening")
+        # print("UDP server up and listening")
 
         while True:
             self.listen_socket()
 
             try:
                 if (self.data_chunk_dict.keys().__len__() == 20) and (self.data_chunk_dict[19].keys().__len__() == 741):
-                    print("DONE")
+                    # print("DONE")
                     break
             except KeyError as e:
                 print(e)

@@ -5,7 +5,7 @@ import struct
 # MACROS (client)
 BUFFER_SIZE = 1350
 WINDOW_SIZE = 150
-TIMEOUT_INTERVAL = 20
+TIMEOUT_INTERVAL = 0.001
 
 # MACROS (server)
 localIP = "server"

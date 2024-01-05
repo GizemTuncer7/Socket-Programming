@@ -14,7 +14,6 @@ def send_file(client_socket, file_path):
             if not bytes_read:
                 break
             client_socket.sendall(bytes_read)
-    print(f'Sent {file_path}')
 
 
 if __name__ == "__main__":
@@ -33,4 +32,4 @@ if __name__ == "__main__":
     end = time.time()
     elapsed = end - now
 
-    print(f"Elapsed time: {elapsed} seconds on TCP - {socket.gethostname()}")
+    print(f"{elapsed}")

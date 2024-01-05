@@ -52,15 +52,16 @@ class UDP_Client_with_Selective_Repeat:
             self.UDPClientSocket.sendto(self.packets[self.next_sequence_number].packed_data_chunk_package(), self.serverAddressPort)
             self.next_sequence_number += 1
 
-        if self.send_base < self.packets_length and self.packets[self.send_base].is_timeout():
-            self.packets[self.send_base].change_state_as_sent()
-            self.UDPClientSocket.sendto(self.packets[self.send_base].packed_data_chunk_package(), self.serverAddressPort)
+        if self.send_base < self.packets_length:
+            if self.packets[self.send_base].is_timeout():
+                self.packets[self.send_base].change_state_as_sent()
+                self.UDPClientSocket.sendto(self.packets[self.send_base].packed_data_chunk_package(), self.serverAddressPort)
 
 
     def receive_ack(self):
         try:
             ack, address = self.UDPClientSocket.recvfrom(BUFFER_SIZE)
-        except:
+        except BlockingIOError:
             return
 
         packet_number, sequence_number, tag = unpack_ack(ack)
@@ -100,4 +101,4 @@ class UDP_Client_with_Selective_Repeat:
 
         # elapsed time in seconds
         elapsed = end - now
-        print(f"Elapsed time: {elapsed} seconds on UDP {socket.gethostname()}")
+        print(f"{elapsed}")
