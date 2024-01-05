@@ -77,6 +77,9 @@ class Package:
 
     def is_timeout(self):
         return datetime.datetime.utcnow().timestamp() - self.sent_time >= TIMEOUT_INTERVAL
+    
+    def is_acked(self):
+        return self.current_state == "acked"
 
     def __str__(self):
         return f'{self.packet_number}: {self.sequence_number} - {self.current_state}'

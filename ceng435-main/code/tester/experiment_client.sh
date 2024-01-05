@@ -4,7 +4,7 @@
 IFACE=eth0
 
 # Experiment configurations
-EXPERIMENTS=5
+EXPERIMENTS=30
 LOSS_RATES=("0%" "5%" "10%" "15%")
 DUPLICATION_RATES=("0%" "5%" "10%")
 CORRUPTION_RATES=("0%" "5%" "10%")
@@ -16,6 +16,16 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+
+mkdir -p results
+mkdir -p results/udp
+mkdir -p results/tcp
+
+delete_txt_files() {
+    rm -f results/udp/*.txt
+    rm -f results/tcp/*.txt
+}
 
 # Function to apply network conditions
 apply_conditions() {
@@ -36,21 +46,26 @@ run_experiments() {
         # Apply network conditions
         apply_conditions "$condition_type" "$value"
 
+        local udp_file="results/udp/udp_${condition_type}_${value}.txt"
+        local tcp_file="results/tcp/tcp_${condition_type}_${value}.txt"
+
         # Run experiments for both UDP and TCP
         for i in $(seq 1 $EXPERIMENTS); do
             echo -e "${MAGENTA}Running UDP experiment $i with $condition_type $value on client${NC}"
-            python3 ../udp_application/udp_client.py
+            python3 ../udp_application/udp_client.py | tee -a $udp_file
             # Run corresponding server in the background or on another terminal
             # python udp_server.py
-            echo -e ""
 
             sleep 2
 
-            echo -e "${MAGENTA}Running TCP experiment $i with $condition_type $value on client${NC}"
-            python3 ../tcp_application/tcp_client.py
+            echo -e "${CYAN}Running TCP experiment $i with $condition_type $value on client${NC}"
+            python3 ../tcp_application/tcp_client.py | tee -a $tcp_file
             # Run corresponding server in the background or on another terminal
             # python tcp_server.py
             echo -e "\n"
+
+            echo -e "\n" >> $udp_file
+            echo -e "\n" >> $tcp_file
         done
 
         # Clear network conditions after the batch is done
@@ -66,21 +81,27 @@ run_experiments() {
 # Ensure any existing network conditions are cleared
 clear_conditions
 
-# # Benchmarking phase without any network impairments
-# echo "Running benchmark experiments (no network impairments)"
-# for i in $(seq 1 $EXPERIMENTS); do
-#     echo "Running UDP benchmark experiment $i"
-#     python3 ../udp_application/udp_client.py
-#     # Run corresponding server in the background or on another terminal
-#     # python udp_server.py
+delete_txt_files
 
-#     echo "Running TCP benchmark experiment $i"
-#     python3 ../tcp_application/tcp_client.py
-#     # Run corresponding server in the background or on another terminal
-#     # python tcp_server.py
-# done
+# Benchmarking phase without any network impairments
+echo "Running benchmark experiments (no network impairments)"
+udp_file="results/udp/udp_benchmark.txt"
+tcp_file="results/tcp/tcp_benchmark.txt"
+for i in $(seq 1 $EXPERIMENTS); do
+    echo -e "${MAGENTA}Running UDP benchmark experiment $i${NC}"
+    python3 ../udp_application/udp_client.py | tee -a $udp_file
+    # Run corresponding server in the background or on another terminal
+    # python udp_server.py
 
-# Now running experiments with network impairments
+    echo -e "${CYAN}Running TCP benchmark experiment $i${NC}"
+    python3 ../tcp_application/tcp_client.py | tee -a $tcp_file
+    # Run corresponding server in the background or on another terminal
+    # python tcp_server.py
+    echo -e "\n" >> $udp_file
+    echo -e "\n" >> $tcp_file
+done
+
+Now running experiments with network impairments
 
 # Run experiments for packet loss
 echo "Running experiments for packet loss"
@@ -94,6 +115,9 @@ run_experiments "duplicate" "${DUPLICATION_RATES[@]}"
 echo "Running experiments for packet corruption"
 run_experiments "corrupt" "${CORRUPTION_RATES[@]}"
 
-# Run experiments for packet delay
-echo "Running experiments for packet delay"
-run_experiments "delay" "${DELAY_TYPES[@]}"
+# # Run experiments for packet delay
+# echo "Running experiments for packet delay"
+# run_experiments "delay" "${DELAY_TYPES[@]}"
+
+echo -e "${GREEN}All experiments are done!${NC}"
+

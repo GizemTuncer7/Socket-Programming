@@ -16,6 +16,7 @@ class UDP_Client_with_Selective_Repeat:
     send_base = 0
     next_sequence_number = 0
 
+
     def __init__(self):
         self.send_base = 0
         self.next_sequence_number = 0
@@ -62,6 +63,10 @@ class UDP_Client_with_Selective_Repeat:
         try:
             ack, address = self.UDPClientSocket.recvfrom(BUFFER_SIZE)
         except BlockingIOError:
+            if self.packets[self.send_base].is_acked():
+                self.send_base += 1
+                if (self.send_base == self.packets_length):
+                    self.is_finished = True
             return
 
         packet_number, sequence_number, tag = unpack_ack(ack)
@@ -71,7 +76,7 @@ class UDP_Client_with_Selective_Repeat:
 
         self.packets[packet_number] = self.packets[packet_number].change_state_as_Acked()
 
-        if packet_number == self.send_base:
+        if packet_number == self.send_base or self.packets[self.send_base].is_acked():
             self.send_base += 1
             if (self.send_base == self.packets_length):
                 self.is_finished = True

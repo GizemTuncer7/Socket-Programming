@@ -4,7 +4,7 @@
 IFACE=eth0
 
 # Experiment configurations
-EXPERIMENTS=5
+EXPERIMENTS=30
 LOSS_RATES=("0%" "5%" "10%" "15%")
 DUPLICATION_RATES=("0%" "5%" "10%")
 CORRUPTION_RATES=("0%" "5%" "10%")
@@ -16,6 +16,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
 
 # Function to apply network conditions
 apply_conditions() {
@@ -38,12 +39,12 @@ run_experiments() {
 
         # Run experiments for both UDP and TCP
         for i in $(seq 1 $EXPERIMENTS); do
-            echo -e "${RED}Running UDP experiment $i with $condition_type $value on server${NC}"
+            echo -e "${BLUE}Running UDP experiment $i with $condition_type $value on server${NC}"
             python3 ../udp_application/udp_server.py
             # Run corresponding server in the background or on another terminal
             # python udp_server.py
 
-            echo -e "\n"
+            echo -e ""
         done
 
         # Clear network conditions after the batch is done
@@ -59,21 +60,18 @@ run_experiments() {
 # Ensure any existing network conditions are cleared
 clear_conditions
 
-# # Benchmarking phase without any network impairments
-# echo "Running benchmark experiments (no network impairments)"
-# for i in $(seq 1 $EXPERIMENTS); do
-#     echo "Running UDP benchmark experiment $i"
-#     python3 ../udp_application/udp_client.py
-#     # Run corresponding server in the background or on another terminal
-#     # python udp_server.py
+# Benchmarking phase without any network impairments
+echo "Running benchmark experiments (no network impairments)"
+for i in $(seq 1 $EXPERIMENTS); do
+    echo -e "${BLUE}Running UDP benchmark experiment $i${NC}"
+    python3 ../udp_application/udp_server.py
+    # Run corresponding server in the background or on another terminal
+    # python udp_server.py
 
-#     echo "Running TCP benchmark experiment $i"
-#     python3 ../tcp_application/tcp_client.py
-#     # Run corresponding server in the background or on another terminal
-#     # python tcp_server.py
-# done
+    echo -e ""
+done
 
-# Now running experiments with network impairments
+Now running experiments with network impairments
 
 # Run experiments for packet loss
 echo "Running experiments for packet loss"
@@ -87,6 +85,8 @@ run_experiments "duplicate" "${DUPLICATION_RATES[@]}"
 echo "Running experiments for packet corruption"
 run_experiments "corrupt" "${CORRUPTION_RATES[@]}"
 
-# Run experiments for packet delay
-echo "Running experiments for packet delay"
-run_experiments "delay" "${DELAY_TYPES[@]}"
+# # Run experiments for packet delay
+# echo "Running experiments for packet delay"
+# run_experiments "delay" "${DELAY_TYPES[@]}"
+
+echo -e "${GREEN}All experiments are done for ${NC}${BLUE} UDP ${NC}"

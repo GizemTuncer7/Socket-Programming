@@ -4,7 +4,7 @@
 IFACE=eth0
 
 # Experiment configurations
-EXPERIMENTS=5
+EXPERIMENTS=30
 LOSS_RATES=("0%" "5%" "10%" "15%")
 DUPLICATION_RATES=("0%" "5%" "10%")
 CORRUPTION_RATES=("0%" "5%" "10%")
@@ -16,6 +16,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
 
 # Function to apply network conditions
 apply_conditions() {
@@ -60,20 +61,16 @@ run_experiments() {
 clear_conditions
 
 # # Benchmarking phase without any network impairments
-# echo "Running benchmark experiments (no network impairments)"
-# for i in $(seq 1 $EXPERIMENTS); do
-#     echo "Running UDP benchmark experiment $i"
-#     python3 ../udp_application/udp_client.py
-#     # Run corresponding server in the background or on another terminal
-#     # python udp_server.py
+echo "Running benchmark experiments (no network impairments)"
+for i in $(seq 1 $EXPERIMENTS); do
+    echo -e "${RED}Running TCP benchmark experiment $i${NC}"
+    python3 ../tcp_application/tcp_server.py
+    # Run corresponding server in the background or on another terminal
+    # python tcp_server.py
+    echo -e ""
+done
 
-#     echo "Running TCP benchmark experiment $i"
-#     python3 ../tcp_application/tcp_client.py
-#     # Run corresponding server in the background or on another terminal
-#     # python tcp_server.py
-# done
-
-# Now running experiments with network impairments
+Now running experiments with network impairments
 
 # Run experiments for packet loss
 echo "Running experiments for packet loss"
@@ -87,6 +84,8 @@ run_experiments "duplicate" "${DUPLICATION_RATES[@]}"
 echo "Running experiments for packet corruption"
 run_experiments "corrupt" "${CORRUPTION_RATES[@]}"
 
-# Run experiments for packet delay
-echo "Running experiments for packet delay"
-run_experiments "delay" "${DELAY_TYPES[@]}"
+# # Run experiments for packet delay
+# echo "Running experiments for packet delay"
+# run_experiments "delay" "${DELAY_TYPES[@]}"
+
+echo -e "${GREEN}All experiments are done for ${NC}${RED}TCP${NC}"
