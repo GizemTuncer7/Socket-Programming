@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script should not but run directly. It is run by experiment_local.sh in local computer.
+# This script makes sure that the UDP server is running with the desired network conditions.
+
+
 # Define the interface to manipulate
 IFACE=eth0
 

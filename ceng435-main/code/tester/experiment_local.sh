@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script is run in the local computer to run experiments on the client side and the server side.
+# This code builds and compose ups the containers and runs experiment.sh scripts
+# Sometimes the experiment numbers in the prints don't match but it's not a problem.
+
 # Step 1: Build the Docker image
 cd ../..
 

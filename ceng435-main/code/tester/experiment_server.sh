@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# This script should not but run directly. It is run by experiment_local.sh in local computer.
+# This script is used to run the two server scripts in parallel.
+
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 GREEN='\033[0;32m'

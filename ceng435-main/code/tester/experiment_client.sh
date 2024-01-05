@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# This script should not but run directly. It is run by experiment_local.sh in local computer.
+# This script is used to run experiments on the client side.
+# It is assumed that the server is already running with the desired network conditions.
+# The script will run experiments for both UDP and TCP protocols.
+# The results will be saved in the results folder in the client container.
+
 # Define the interface to manipulate
 IFACE=eth0
 
