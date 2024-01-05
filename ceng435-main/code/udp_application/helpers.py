@@ -5,7 +5,7 @@ import struct
 # MACROS (client)
 BUFFER_SIZE = 1350
 WINDOW_SIZE = 150
-TIMEOUT_INTERVAL = 20
+TIMEOUT_INTERVAL = 0.001
 
 # MACROS (server)
 localIP = "server"
@@ -29,7 +29,13 @@ HEADER_SIZE = PACKET_NUMBER_SIZE + SEQUENCE_NUMBER_SIZE + CHECKSUM_SIZE + DATA_L
 DATA_CHUNK_SIZE = PACKAGE_SIZE - HEADER_SIZE
 
 
-def interleave_parts(large_file_paths, small_file_paths):
+def interleave_parts(large_file_paths, small_file_paths) -> list:
+    """
+    interleaves the parts of the large and small files
+    :param large_file_paths: list of paths to large files
+    :param small_file_paths: list of paths to small files
+    :return: interleaved list of paths
+    """
     interleaved = []
     larger_list, smaller_list = (large_file_paths, small_file_paths) if len(large_file_paths) > len(
         small_file_paths) else (small_file_paths, large_file_paths)
@@ -43,10 +49,14 @@ def interleave_parts(large_file_paths, small_file_paths):
     return interleaved
 
 
-def get_interleaved_path_list():
+def get_interleaved_path_list() -> list:
+    """
+    returns the interleaved path list
+    :return: interleaved path list
+    """
     large_file_paths = []
     small_file_paths = []
-    for i in range(10):
+    for i in range(10):                                                             # Reads 10 files
         large_file_paths.append(os.path.join('/root', 'objects', f"large-{i}.obj"))
         small_file_paths.append(os.path.join('/root', 'objects', f"small-{i}.obj"))
 
@@ -54,15 +64,49 @@ def get_interleaved_path_list():
     return interleaved_path_list
 
 
-def unpack_ack(packed_ack):
-    return struct.unpack('!III', packed_ack)
+def unpack_ack(packed_ack) -> tuple(int, int, int):
+    """
+    Unpack a packed acknowledgment (ack) into its constituent parts.
+
+    Parameters:
+    packed_ack (bytes): The packed ack received, expected to be a sequence of bytes.
+
+    Returns:
+    tuple[int, int, int]: A tuple containing three integers representing the packet number,
+                          sequence number, and tag, respectively, extracted from the packed ack.
+    """
+    return struct.unpack('!III', packed_ack) 
 
 
-def check_checksum(checksum, data):
+def check_checksum(checksum, data) -> bool:
+    """
+    NOT USED
+
+    Check if the checksum of the data is equal to the given checksum.
+
+    Parameters:
+    checksum (bytes): The checksum to check against.
+    data (bytes): The data to check the checksum of.
+
+    Returns:
+    bool: True if the checksums are equal, False otherwise.
+
+    """
     return checksum == hashlib.md5(data).digest()
 
 
 def unpacked_data_chunk_package(packed_package):
+    """
+    Unpack a packed data chunk package into its constituent parts.
+
+    Parameters:
+    packed_package (bytes): The packed package received, expected to be a sequence of bytes.
+
+    Returns:
+    tuple[int, int, bytes, int, int, bytes]: A tuple containing the packet number, sequence number,
+                                           checksum, tag, chunk length, and data chunk, respectively,
+                                           extracted from the packed package.
+    """
     packet_number, sequence_number, checksum, tag, chunk_length = struct.unpack(f'!II16sII', packed_package[:HEADER_SIZE])
     data_chunk = struct.unpack(f'{chunk_length}s', packed_package[HEADER_SIZE:HEADER_SIZE + chunk_length])[0]
 
@@ -72,5 +116,16 @@ def unpacked_data_chunk_package(packed_package):
     return packet_number, sequence_number, checksum, tag, chunk_length, data_chunk
 
 
-def pack_ack(packet_number, sequence_number, tag):
+def pack_ack(packet_number, sequence_number, tag) -> bytes:
+    """
+    Pack the given packet number, sequence number, and tag into a single packet.
+
+    Parameters:
+    packet_number (int): The packet number to pack.
+    sequence_number (int): The sequence number to pack.
+    tag (int): The tag to pack.
+
+    Returns:
+    bytes: The ACK packet containing the packet number, sequence number, and tag.
+    """
     return struct.pack('!III', packet_number, sequence_number, tag)

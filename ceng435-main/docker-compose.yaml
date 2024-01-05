@@ -11,6 +11,7 @@ services:
     volumes:
       - ./code:/app:rw
       - ./examples:/examples:rw
+    command: /bin/bash -c "cd /root/code/tester && ./experiment_server.sh"
   client:
     image: ceng435:latest
     hostname: client
@@ -21,3 +22,4 @@ services:
     volumes:
       - ./code:/app:rw
       - ./examples:/examples:rw
+    command: /bin/bash -c "cd /root/code/tester && ./experiment_client.sh"
